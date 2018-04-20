@@ -6,7 +6,7 @@
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{FE5CED2E-A91A-48C6-BE2A-ABFA7ADF6C8E}</ProjectGuid>
     <OutputType>Exe</OutputType>
-    <StartupObject>ConsoleApplication1.Module1</StartupObject>
+    <StartupObject>ConsoleApplication1.EdumateToCampaignMonitor</StartupObject>
     <RootNamespace>ConsoleApplication1</RootNamespace>
     <AssemblyName>EdumateToCampaignMonitor</AssemblyName>
     <FileAlignment>512</FileAlignment>
