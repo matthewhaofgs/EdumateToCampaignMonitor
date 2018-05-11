@@ -252,6 +252,14 @@ email_address
                         objCustomField = Nothing
                     End If
 
+                    If Not dr.IsDBNull(6) Then
+                        Dim objCustomField As New SubscriberCustomField
+                        objCustomField.Key = "ROLL CLASS"
+                        objCustomField.Value = dr.GetValue(6)
+                        users.Last.customFields.Add(objCustomField)
+                        objCustomField = Nothing
+                    End If
+
                 End If
 
 
