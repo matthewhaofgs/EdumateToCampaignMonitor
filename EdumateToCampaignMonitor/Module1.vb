@@ -62,119 +62,149 @@ Module EdumateToCampaignMonitor
 
     Function getEdumateSubscribers()
 
-        Dim commandString As String = "SELECT DISTINCT  
+        Dim commandString As String = "
+-- Get a list of emails and aggregate forms, PA classes and staff groups into custom fields
+
+SELECT DISTINCT  
 firstname,
 surname as lastname,
 email_address,
-listagg(short_name, ',') WITHIN GROUP (ORDER BY short_name ASC) as year_group,
-listagg(pa_class, ',') WITHIN GROUP (ORDER BY pa_class ASC) as pa_class
+listagg(DISTINCT form, ',') WITHIN GROUP (ORDER BY form ASC) as year_group,
+listagg(DISTINCT pa_class, ',') WITHIN GROUP (ORDER BY pa_class ASC) as pa_class,
+listagg(DISTINCT groups, ',') WITHIN GROUP (ORDER BY groups ASC) as staff_group,
+listagg(DISTINCT roll_class, ',') WITHIN GROUP (ORDER BY roll_class ASC) as roll_class
 
-	FROM(
-		SELECT        
-		parentcontact.firstname,
-		parentcontact.surname,
-		parentcontact.email_address,
-		form.SHORT_NAME,
-		course.code || '_' || class.identifier || ';' as pa_class 
-
-		FROM            relationship
-
-		INNER JOIN contact as ParentContact
-		ON relationship.contact_id2 = Parentcontact.contact_id
-
-		INNER JOIN contact as StudentContact 
-		ON relationship.contact_id1 = studentContact.contact_id
-
-		INNER JOIN student
-		ON studentContact.contact_id = student.contact_id
-
-		INNER JOIN carer 
-		ON parentcontact.contact_id = carer.contact_id
+FROM
+	
+	(
+		-- Get emails for carers of current students
+		SELECT DISTINCT
+		parent.firstname,
+		parent.surname,
+		parent.email_address,
+		form.short_name	as form,
+		course.code || '_' || class.identifier || ';' as pa_class, 
+		NULL AS groups,
+		VSCE.class as roll_class
+		
+		FROM
+			edumate.view_student_class_enrolment VSCE
+			
+		INNER JOIN edumate.view_STUDENT_MAIL_CARERS VSMC on VSCE.student_id = VSMC.student_id
+		INNER JOIN CONTACT parent on 
+		(	VSMC.CARER1_CONTACT_ID = parent.contact_id OR
+			VSMC.CARER2_CONTACT_ID = parent.contact_id OR
+			VSMC.CARER3_CONTACT_ID = parent.contact_id OR
+			VSMC.CARER4_CONTACT_ID = parent.contact_id )
 
 		INNER JOIN student_form_run 
-		ON student.student_id = student_form_run.STUDENT_ID
+		ON VSCE.student_id = student_form_run.STUDENT_ID
 
 		INNER JOIN form_run 
 		ON student_form_run.FORM_RUN_ID = form_run.FORM_RUN_ID
 
 		INNER JOIN form 
 		ON form_run.FORM_ID = form.form_id
-		
-		LEFT JOIN edumate.view_student_class_enrolment VSCE on (student.student_id = VSCE.student_id   AND
-														VSCE.course like 'PA %' AND current_date between VSCE.start_date and VSCE.end_date)
-		LEFT JOIN course on VSCE.course_id = course.course_id
-		LEFT JOIN class on VSCE.class_id = class.class_id
 
-		
-		WHERE        (relationship.relationship_type_id IN (1, 4, 8, 15, 28, 33)) 
-		AND current_date between student_form_run.start_date and student_form_run.end_date
-		
+		LEFT JOIN edumate.view_student_class_enrolment VSPA on (VSCE.student_id = VSPA.student_id   AND
+														VSPA.course like 'PA %' AND current_date between VSPA.start_date and VSPA.end_date)
+		LEFT JOIN course on VSPA.course_id = course.course_id
+		LEFT JOIN class on VSPA.class_id = class.class_id
 
+
+		WHERE 
+			VSCE.class_type_id = 2 AND current_date between VSCE.start_date and VSCE.end_date AND
+			current_date between student_form_run.start_date and student_form_run.end_date	
 
 		UNION
-
+		
+		-- Get emails for all current students
 		SELECT        
-		parentcontact.firstname,
-		parentcontact.surname,
-		parentcontact.email_address,
-		form.SHORT_NAME,
-		course.code || '_' || class.identifier || ';' as pa_class 
+			contact.firstname,
+			contact.surname,
+			contact.email_address,
+			form.short_name	as form,
+			course.code || '_' || class.identifier || ';' as pa_class, 
+			NULL AS groups,
+			VSCE.class as roll_class	
+				
+		FROM
+			edumate.view_student_class_enrolment VSCE
 
-		FROM            relationship
-
-		INNER JOIN contact as ParentContact
-		ON relationship.contact_id1 = Parentcontact.contact_id
-
-		INNER JOIN contact as StudentContact 
-		ON relationship.contact_id2 = studentContact.contact_id
-
-		INNER JOIN student
-		ON studentContact.contact_id = student.contact_id
-
-		INNER JOIN carer 
-		ON parentcontact.contact_id = carer.contact_id
+		INNER JOIN student on VSCE.student_id = student.student_id
+		
+		INNER JOIN CONTACT on student.contact_id = contact.contact_id
 
 		INNER JOIN student_form_run 
-		ON student.student_id = student_form_run.STUDENT_ID
+		ON VSCE.student_id = student_form_run.STUDENT_ID
 
 		INNER JOIN form_run 
 		ON student_form_run.FORM_RUN_ID = form_run.FORM_RUN_ID
 
 		INNER JOIN form 
 		ON form_run.FORM_ID = form.form_id
-
-		LEFT JOIN edumate.view_student_class_enrolment VSCE on student.student_id = VSCE.student_id 
-		LEFT JOIN course on VSCE.course_id = course.course_id
-		LEFT JOIN class on VSCE.class_id = class.class_id
-
-		WHERE        (relationship.relationship_type_id IN (2, 5, 9, 16, 29, 34)) 
-		AND current_date between student_form_run.start_date and student_form_run.end_date
-		AND VSCE.course like 'PA %' AND current_date between VSCE.start_date and VSCE.end_date
+														
+		LEFT JOIN edumate.view_student_class_enrolment VSPA on (VSCE.student_id = VSPA.student_id   AND
+														VSPA.course like 'PA %' AND current_date between VSPA.start_date and VSPA.end_date)
+		LEFT JOIN course on VSPA.course_id = course.course_id
+		LEFT JOIN class on VSPA.class_id = class.class_id
 		
-UNION
+		WHERE 
+			VSCE.class_type_id = 2 AND current_date between VSCE.start_date and VSCE.end_date AND
+			current_date between student_form_run.start_date and student_form_run.end_date	
+		
+		UNION
+		
+		-- Get details of current staff
+		SELECT        
+			contact.firstname,
+			contact.surname,
+			contact.email_address,
+			'Staff' as form,
+			null as pa_class,
+			groups,
+			class.class as roll_class	
+			
+		FROM 
+			STAFF
 
-SELECT        
-contact.firstname,
-contact.surname,
-contact.email_address,
-'Staff' AS staff,
-' ' as pa_class
+			INNER JOIN Contact ON staff.contact_id = contact.contact_id 
+			INNER JOIN staff_employment ON staff.staff_id = staff_employment.staff_id
+			
+			LEFT JOIN teacher on contact.contact_id = teacher.contact_id
+			LEFT JOIN class_teacher on (teacher.teacher_id = class_teacher.teacher_id
+			                            AND class_teacher.class_id IN (SELECT class_id
+																		FROM  edumate.view_student_class_enrolment 
+																		WHERE class_type_id = 2 AND
+																			current_date between start_date and end_date))
+			LEFT JOIN class on class_teacher.class_id = class.class_id
+			
+			LEFT JOIN group_membership ON group_membership.contact_id = contact.contact_id
+			LEFT JOIN groups ON group_membership.groups_id = groups.groups_id
+			LEFT JOIN work_detail on contact.contact_id = work_detail.contact_id
+			LEFT JOIN work_type on work_detail.work_type_id = work_type.work_type_id
+			
+		WHERE  
+			staff_employment.employment_type_id IN (1,2) AND
+			(staff_employment.end_date is null or staff_employment.end_date >= current date)
+			AND staff_employment.start_date <= (current date +2 DAYS)	AND
+			(work_type.work_type <> 'COMPUTER' or work_type.work_type is null)		
+	)
+	
+					
+GROUP BY 
+surname,
+firstname,
+email_address
 
-FROM            STAFF
+ORDER BY
+surname,
+firstname,
+email_address
 
-INNER JOIN Contact 
-  ON staff.contact_id = contact.contact_id 
-INNER JOIN staff_employment
-  ON staff.staff_id = staff_employment.staff_id
-LEFT JOIN sys_user 
-  ON contact.contact_id = sys_user.contact_id
-WHERE  (staff_employment.end_date is null or staff_employment.end_date >= current date)
-and staff_employment.start_date <= (current date +90 DAYS)
 
-)
 
--- ORDER BY email_address, surname, firstname	
-GROUP BY email_address, surname, firstname"
+"
 
 
         Dim users As New List(Of emailSubscriber)
@@ -210,6 +240,14 @@ GROUP BY email_address, surname, firstname"
                         Dim objCustomField As New SubscriberCustomField
                         objCustomField.Key = "PA CLASS"
                         objCustomField.Value = dr.GetValue(4)
+                        users.Last.customFields.Add(objCustomField)
+                        objCustomField = Nothing
+                    End If
+
+                    If Not dr.IsDBNull(5) Then
+                        Dim objCustomField As New SubscriberCustomField
+                        objCustomField.Key = "STAFF GROUPS"
+                        objCustomField.Value = dr.GetValue(5)
                         users.Last.customFields.Add(objCustomField)
                         objCustomField = Nothing
                     End If
