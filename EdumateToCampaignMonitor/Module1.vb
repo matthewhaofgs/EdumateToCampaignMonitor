@@ -228,37 +228,46 @@ email_address
                     If Not dr.IsDBNull(0) Then users.Last.name = dr.GetValue(0) & " "
                     If Not dr.IsDBNull(1) Then users.Last.name = users.Last.name & dr.GetValue(1)
 
+
+                    Dim objCustomField As New SubscriberCustomField
+                    objCustomField.Key = "YEAR GROUP"
                     If Not dr.IsDBNull(3) Then
-                        Dim objCustomField As New SubscriberCustomField
-                        objCustomField.Key = "YEAR GROUP"
                         objCustomField.Value = dr.GetValue(3)
-                        users.Last.customFields.Add(objCustomField)
-                        objCustomField = Nothing
+                    Else
+                        objCustomField.Value = "N/A"
                     End If
+                    users.Last.customFields.Add(objCustomField)
+                    objCustomField = Nothing
 
+                    objCustomField = New SubscriberCustomField
+                    objCustomField.Key = "PA CLASS"
                     If Not dr.IsDBNull(4) Then
-                        Dim objCustomField As New SubscriberCustomField
-                        objCustomField.Key = "PA CLASS"
                         objCustomField.Value = dr.GetValue(4)
-                        users.Last.customFields.Add(objCustomField)
-                        objCustomField = Nothing
+                    Else
+                        objCustomField.Value = "N/A"
                     End If
+                    users.Last.customFields.Add(objCustomField)
+                    objCustomField = Nothing
 
+                    objCustomField = New SubscriberCustomField
+                    objCustomField.Key = "STAFF GROUPS"
                     If Not dr.IsDBNull(5) Then
-                        Dim objCustomField As New SubscriberCustomField
-                        objCustomField.Key = "STAFF GROUPS"
                         objCustomField.Value = dr.GetValue(5)
-                        users.Last.customFields.Add(objCustomField)
-                        objCustomField = Nothing
+                    Else
+                        objCustomField.Value = "N/A"
                     End If
+                    users.Last.customFields.Add(objCustomField)
+                    objCustomField = Nothing
 
+                    objCustomField = New SubscriberCustomField
+                    objCustomField.Key = "ROLL CLASS"
                     If Not dr.IsDBNull(6) Then
-                        Dim objCustomField As New SubscriberCustomField
-                        objCustomField.Key = "ROLL CLASS"
                         objCustomField.Value = dr.GetValue(6)
-                        users.Last.customFields.Add(objCustomField)
-                        objCustomField = Nothing
+                    Else
+                        objCustomField.Value = "N/A"
                     End If
+                    users.Last.customFields.Add(objCustomField)
+                    objCustomField = Nothing
 
                 End If
 
