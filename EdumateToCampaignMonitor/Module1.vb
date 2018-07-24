@@ -63,8 +63,6 @@ Module EdumateToCampaignMonitor
     Function getEdumateSubscribers()
 
         Dim commandString As String = "
--- Get a list of emails and aggregate forms, PA classes and staff groups into custom fields
-
 SELECT DISTINCT  
 firstname,
 surname as lastname,
@@ -107,7 +105,8 @@ FROM
 		ON form_run.FORM_ID = form.form_id
 
 		LEFT JOIN edumate.view_student_class_enrolment VSPA on (VSCE.student_id = VSPA.student_id   AND
-														VSPA.course like 'PA %' AND current_date between VSPA.start_date and VSPA.end_date)
+									(VSPA.course like 'PA %' OR VSPA.course like '%Keyboard Club%') 
+									AND current_date between VSPA.start_date and VSPA.end_date)
 		LEFT JOIN course on VSPA.course_id = course.course_id
 		LEFT JOIN class on VSPA.class_id = class.class_id
 
@@ -145,7 +144,8 @@ FROM
 		ON form_run.FORM_ID = form.form_id
 														
 		LEFT JOIN edumate.view_student_class_enrolment VSPA on (VSCE.student_id = VSPA.student_id   AND
-														VSPA.course like 'PA %' AND current_date between VSPA.start_date and VSPA.end_date)
+														
+									(VSPA.course like 'PA %' OR VSPA.course like '%Keyboard Club%')  AND current_date between VSPA.start_date and VSPA.end_date)
 		LEFT JOIN course on VSPA.course_id = course.course_id
 		LEFT JOIN class on VSPA.class_id = class.class_id
 		
@@ -201,6 +201,7 @@ ORDER BY
 surname,
 firstname,
 email_address
+
 
 
 
