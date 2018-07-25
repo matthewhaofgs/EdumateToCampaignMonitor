@@ -67,103 +67,138 @@ SELECT DISTINCT
 firstname,
 surname as lastname,
 email_address,
-listagg(DISTINCT form, ',') WITHIN GROUP (ORDER BY form ASC) as year_group,
-listagg(DISTINCT pa_class, ',') WITHIN GROUP (ORDER BY pa_class ASC) as pa_class,
-listagg(DISTINCT groups, ',') WITHIN GROUP (ORDER BY groups ASC) as staff_group,
-listagg(DISTINCT roll_class, ',') WITHIN GROUP (ORDER BY roll_class ASC) as roll_class
+listagg(DISTINCT form,'') WITHIN GROUP (ORDER BY form ASC) as year_group,
+listagg(DISTINCT pa_class,'') WITHIN GROUP (ORDER BY pa_class ASC) as pa_class,
+listagg(DISTINCT groups,'') WITHIN GROUP (ORDER BY groups ASC) as staff_group,
+listagg(DISTINCT roll_class,'') WITHIN GROUP (ORDER BY roll_class ASC) as roll_class,
+listagg(DISTINCT pa_group,'') WITHIN GROUP (ORDER BY pa_group ASC) as pa_group
 
 FROM
 	
 	(
+		-- Get emails for all current students
+		SELECT DISTINCT       
+			contact.firstname,
+			contact.surname,
+			contact.email_address,
+			form.short_name || ';' as form,
+			class.class || ';' as pa_group, 
+			course.code || '_' || class.identifier || ';' as pa_class, 
+			'' AS groups,
+			VSCE.class || ';' as roll_class	
+				
+		FROM
+			edumate.VIEW_STUDENT_START_EXIT_DATES VSSED
+			
+		INNER JOIN student on VSSED.student_id = student.student_id 
+		
+		INNER JOIN contact on student.contact_id = contact.contact_id	
+/*
+		INNER JOIN edumate.view_enroled_students_form_run sfr
+		ON VSSED.student_id = sfr.STUDENT_ID 
+		AND Date(CURRENT DATE)  between sfr.computed_v_start_date and sfr.computed_end_date
+*/
+
+		INNER JOIN student_form_run sfr
+		ON VSSED.student_id = sfr.STUDENT_ID 
+		AND sfr.form_run_id IN (SELECT form_run_id
+								FROM edumate.VIEW_FORM_RUN_DATES
+								WHERE
+								Date(CURRENT DATE) between v_start_date and end_date)
+		
+		INNER JOIN form_run 
+		ON sfr.form_run_id = form_run.form_run_id
+
+		INNER JOIN form 
+		ON form_run.form_id = form.form_id
+
+		-- Get roll call class
+		LEFT JOIN edumate.view_student_class_enrolment VSCE on (VSSED.student_id = VSCE.student_id   
+		AND	VSCE.class_type_id = 2
+		AND Date(CURRENT DATE)  between VSCE.start_date and VSCE.end_date)
+									
+		-- Get performing arts classes
+		LEFT JOIN edumate.view_student_class_enrolment VSPA on (VSSED.student_id = VSPA.student_id
+		AND(VSPA.course like 'PA %' OR VSPA.course like '%Keyboard Club%') 
+		AND Date(CURRENT DATE)  between VSPA.start_date and VSPA.end_date)
+		
+		LEFT JOIN course on VSPA.course_id = course.course_id
+		LEFT JOIN class on VSPA.class_id = class.class_id
+
+		WHERE 
+			Date(CURRENT DATE)  between (VSSED.start_date - 60 days) and VSSED.exit_date 
+		
+		UNION
+		
 		-- Get emails for carers of current students
 		SELECT DISTINCT
 		parent.firstname,
 		parent.surname,
 		parent.email_address,
-		form.short_name	as form,
+		form.short_name || ';' as form,
+		class.class || ';' as pa_group, 
 		course.code || '_' || class.identifier || ';' as pa_class, 
-		NULL AS groups,
-		VSCE.class as roll_class
+		'' AS groups,
+		VSCE.class || ';' as roll_class	
 		
 		FROM
-			edumate.view_student_class_enrolment VSCE
+			edumate.VIEW_STUDENT_START_EXIT_DATES VSSED
 			
-		INNER JOIN edumate.view_STUDENT_MAIL_CARERS VSMC on VSCE.student_id = VSMC.student_id
+		INNER JOIN edumate.VIEW_STUDENT_MAIL_CARERS VSMC on VSSED.student_id = VSMC.student_id
+		
 		INNER JOIN CONTACT parent on 
 		(	VSMC.CARER1_CONTACT_ID = parent.contact_id OR
 			VSMC.CARER2_CONTACT_ID = parent.contact_id OR
 			VSMC.CARER3_CONTACT_ID = parent.contact_id OR
 			VSMC.CARER4_CONTACT_ID = parent.contact_id )
-
-		INNER JOIN student_form_run 
-		ON VSCE.student_id = student_form_run.STUDENT_ID
+	
+/*
+		INNER JOIN edumate.view_enroled_students_form_run sfr
+		ON VSSED.student_id = sfr.STUDENT_ID 
+		AND Date(CURRENT DATE)  between sfr.computed_v_start_date and sfr.computed_end_date
+*/
+		INNER JOIN student_form_run sfr
+		ON VSSED.student_id = sfr.STUDENT_ID 
+		AND sfr.form_run_id IN (SELECT form_run_id
+								FROM edumate.VIEW_FORM_RUN_DATES
+								WHERE
+								Date(CURRENT DATE) between v_start_date and end_date)
 
 		INNER JOIN form_run 
-		ON student_form_run.FORM_RUN_ID = form_run.FORM_RUN_ID
+		ON sfr.form_run_id = form_run.form_run_id
 
 		INNER JOIN form 
-		ON form_run.FORM_ID = form.form_id
+		ON form_run.form_id = form.form_id
 
-		LEFT JOIN edumate.view_student_class_enrolment VSPA on (VSCE.student_id = VSPA.student_id   AND
-									(VSPA.course like 'PA %' OR VSPA.course like '%Keyboard Club%') 
-									AND current_date between VSPA.start_date and VSPA.end_date)
+		-- Get roll call class
+		LEFT JOIN edumate.view_student_class_enrolment VSCE on (VSSED.student_id = VSCE.student_id   
+		AND	VSCE.class_type_id = 2
+		AND Date(CURRENT DATE)  between VSCE.start_date and VSCE.end_date)
+									
+		-- Get performing arts classes
+		LEFT JOIN edumate.view_student_class_enrolment VSPA on (VSSED.student_id = VSPA.student_id
+		AND(VSPA.course like 'PA %' OR VSPA.course like '%Keyboard Club%') 
+		AND Date(CURRENT DATE)  between VSPA.start_date and VSPA.end_date)
+		
 		LEFT JOIN course on VSPA.course_id = course.course_id
 		LEFT JOIN class on VSPA.class_id = class.class_id
 
-
 		WHERE 
-			VSCE.class_type_id = 2 AND current_date between VSCE.start_date and VSCE.end_date AND
-			current_date between student_form_run.start_date and student_form_run.end_date	
+			Date(CURRENT DATE)  between (VSSED.start_date - 60 days) and VSSED.exit_date 
 
 		UNION
 		
-		-- Get emails for all current students
-		SELECT        
-			contact.firstname,
-			contact.surname,
-			contact.email_address,
-			form.short_name	as form,
-			course.code || '_' || class.identifier || ';' as pa_class, 
-			NULL AS groups,
-			VSCE.class as roll_class	
-				
-		FROM
-			edumate.view_student_class_enrolment VSCE
 
-		INNER JOIN student on VSCE.student_id = student.student_id
-		
-		INNER JOIN CONTACT on student.contact_id = contact.contact_id
-
-		INNER JOIN student_form_run 
-		ON VSCE.student_id = student_form_run.STUDENT_ID
-
-		INNER JOIN form_run 
-		ON student_form_run.FORM_RUN_ID = form_run.FORM_RUN_ID
-
-		INNER JOIN form 
-		ON form_run.FORM_ID = form.form_id
-														
-		LEFT JOIN edumate.view_student_class_enrolment VSPA on (VSCE.student_id = VSPA.student_id   AND
-														
-									(VSPA.course like 'PA %' OR VSPA.course like '%Keyboard Club%')  AND current_date between VSPA.start_date and VSPA.end_date)
-		LEFT JOIN course on VSPA.course_id = course.course_id
-		LEFT JOIN class on VSPA.class_id = class.class_id
-		
-		WHERE 
-			VSCE.class_type_id = 2 AND current_date between VSCE.start_date and VSCE.end_date AND
-			current_date between student_form_run.start_date and student_form_run.end_date	
-		
-		UNION
-		
 		-- Get details of current staff
-		SELECT        
+		SELECT DISTINCT     
 			contact.firstname,
 			contact.surname,
 			contact.email_address,
-			'Staff' as form,
-			null as pa_class,
-			groups,
-			class.class as roll_class	
+			'Staff;' as form,
+			'' as pa_group, 
+			'' as pa_class,
+			groups || ';' as groups,
+			class.class || ';' as roll_class	
 			
 		FROM 
 			STAFF
@@ -176,7 +211,7 @@ FROM
 			                            AND class_teacher.class_id IN (SELECT class_id
 																		FROM  edumate.view_student_class_enrolment 
 																		WHERE class_type_id = 2 AND
-																			current_date between start_date and end_date))
+																		Date(CURRENT DATE)  between start_date and end_date))
 			LEFT JOIN class on class_teacher.class_id = class.class_id
 			
 			LEFT JOIN group_membership ON group_membership.contact_id = contact.contact_id
@@ -186,11 +221,13 @@ FROM
 			
 		WHERE  
 			staff_employment.employment_type_id IN (1,2) AND
-			(staff_employment.end_date is null or staff_employment.end_date >= current date)
-			AND staff_employment.start_date <= (current date +2 DAYS)	AND
+			(staff_employment.end_date is null or staff_employment.end_date >= Date(CURRENT DATE) )
+			AND staff_employment.start_date <= (Date(CURRENT DATE) +2 DAYS)	AND
 			(work_type.work_type <> 'COMPUTER' or work_type.work_type is null)		
 	)
 	
+WHERE
+email_address IS NOT NULL
 					
 GROUP BY 
 surname,
