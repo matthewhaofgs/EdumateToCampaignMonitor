@@ -14,11 +14,35 @@ Module EdumateToCampaignMonitor
 
 
     Sub Main()
-        addSubscriber(getEdumateSubscribers())
-    End Sub
+		addSubscriber(getEdumateSubscribers())
+		'test()
+	End Sub
+
+	Sub test()
+		Dim testlist As New List(Of emailSubscriber)
+		Dim testuser As New emailSubscriber
+
+		testuser.emailaddress = "mharding@ofgs.nsw.edu.au"
+		testuser.name = "Matthew Harding"
+
+		Dim objCustomField As New SubscriberCustomField
+		objCustomField.Key = "YEAR GROUP"
+		objCustomField.Value = "N/A"
+
+		testuser.customFields.Add(objCustomField)
+
+		testlist.Add(testuser)
+
+		addSubscriber(testlist)
 
 
-    Function readTextFile(filename As String)
+
+
+	End Sub
+
+
+
+	Function readTextFile(filename As String)
         Dim directory As String = My.Application.Info.DirectoryPath
 
         Dim strKey
@@ -49,8 +73,8 @@ Module EdumateToCampaignMonitor
         For Each objEmailSubscriber In users
 
             Try
-                objSubscriberList.Add(objEmailSubscriber.emailaddress, objEmailSubscriber.name, objEmailSubscriber.customFields, False)
-            Catch ex As Exception
+				objSubscriberList.Add(objEmailSubscriber.emailaddress, objEmailSubscriber.name, objEmailSubscriber.customFields, False)
+			Catch ex As Exception
                 Console.WriteLine(ex)
             End Try
 
@@ -120,7 +144,7 @@ FROM
 		-- Get performing arts classes
 		LEFT JOIN edumate.view_student_class_enrolment VSPA on (VSSED.student_id = VSPA.student_id
 		AND(VSPA.course like 'PA %' OR VSPA.course like '%Keyboard Club%') 
-		AND Date(CURRENT DATE)  between VSPA.start_date and VSPA.end_date)
+		AND Date(CURRENT DATE)  between (VSPA.start_date - 10 days)  and VSPA.end_date)
 		
 		LEFT JOIN course on VSPA.course_id = course.course_id
 		LEFT JOIN class on VSPA.class_id = class.class_id
@@ -178,7 +202,7 @@ FROM
 		-- Get performing arts classes
 		LEFT JOIN edumate.view_student_class_enrolment VSPA on (VSSED.student_id = VSPA.student_id
 		AND(VSPA.course like 'PA %' OR VSPA.course like '%Keyboard Club%') 
-		AND Date(CURRENT DATE)  between VSPA.start_date and VSPA.end_date)
+		AND Date(CURRENT DATE)  between (VSPA.start_date - 10 days) and VSPA.end_date)
 		
 		LEFT JOIN course on VSPA.course_id = course.course_id
 		LEFT JOIN class on VSPA.class_id = class.class_id
@@ -220,8 +244,7 @@ FROM
 			LEFT JOIN work_type on work_detail.work_type_id = work_type.work_type_id
 			
 		WHERE  
-			staff_employment.employment_type_id IN (1,2) AND
-			(staff_employment.end_date is null or staff_employment.end_date >= Date(CURRENT DATE) )
+						(staff_employment.end_date is null or staff_employment.end_date >= Date(CURRENT DATE) )
 			AND staff_employment.start_date <= (Date(CURRENT DATE) +2 DAYS)	AND
 			(work_type.work_type <> 'COMPUTER' or work_type.work_type is null)		
 	)
@@ -238,7 +261,6 @@ ORDER BY
 surname,
 firstname,
 email_address
-
 
 
 
