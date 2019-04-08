@@ -91,11 +91,12 @@ SELECT DISTINCT
 firstname,
 surname as lastname,
 email_address,
-listagg(DISTINCT form,'') WITHIN GROUP (ORDER BY form ASC) as year_group,
-listagg(DISTINCT pa_class,'') WITHIN GROUP (ORDER BY pa_class ASC) as pa_class,
-listagg(DISTINCT groups,'') WITHIN GROUP (ORDER BY groups ASC) as staff_group,
-listagg(DISTINCT roll_class,'') WITHIN GROUP (ORDER BY roll_class ASC) as roll_class,
-listagg(DISTINCT pa_group,'') WITHIN GROUP (ORDER BY pa_group ASC) as pa_group
+listagg(DISTINCT CAST((form) AS varchar(10000)),'') WITHIN GROUP (ORDER BY form ASC) as year_group,
+listagg(DISTINCT CAST((pa_class) AS varchar(10000)),'') WITHIN GROUP (ORDER BY pa_class ASC) as pa_class,
+listagg(DISTINCT CAST((groups) AS varchar(10000)),'') WITHIN GROUP (ORDER BY groups ASC) as staff_group,
+listagg(DISTINCT CAST((roll_class) AS varchar(10000)),'') WITHIN GROUP (ORDER BY roll_class ASC) as roll_class,
+listagg(DISTINCT CAST((pa_group) AS varchar(10000)),'') WITHIN GROUP (ORDER BY pa_group ASC) as pa_group,
+listagg(DISTINCT CAST((all_classes) AS varchar(10000)),'') WITHIN GROUP (ORDER BY all_classes ASC) as all_classes
 
 FROM
 	
@@ -109,7 +110,8 @@ FROM
 			class.class || ';' as pa_group, 
 			course.code || '_' || class.identifier || ';' as pa_class, 
 			'' AS groups,
-			VSCE.class || ';' as roll_class	
+			VSCE.class || ';' as roll_class,	
+			allCourse.code || '_' || allclass.identifier || ';' as all_classes
 				
 		FROM
 			edumate.VIEW_STUDENT_START_EXIT_DATES VSSED
@@ -140,7 +142,20 @@ FROM
 		LEFT JOIN edumate.view_student_class_enrolment VSCE on (VSSED.student_id = VSCE.student_id   
 		AND	VSCE.class_type_id = 2
 		AND Date(CURRENT DATE)  between VSCE.start_date and VSCE.end_date)
-									
+		
+		
+		
+		-- Get All classes
+		LEFT JOIN edumate.view_student_class_enrolment VSFCE on (VSSED.student_id = VSFCE.student_id   
+		AND Date(CURRENT DATE)  between (VSFCE.start_date - 10 DAYS) and VSFCE.end_date)
+		
+		LEFT JOIN edumate.course allCourse ON
+		vsfce.course_id = allCourse.course_id 
+		
+		LEFT JOIN edumate.class allClass ON
+		vsfce.class_id = allClass.class_id
+		
+		
 		-- Get performing arts classes
 		LEFT JOIN edumate.view_student_class_enrolment VSPA on (VSSED.student_id = VSPA.student_id
 		AND(VSPA.course like 'PA %' OR VSPA.course like '%Keyboard Club%') 
@@ -154,6 +169,8 @@ FROM
 		
 		UNION
 		
+		
+		
 		-- Get emails for carers of current students
 		SELECT DISTINCT
 		parent.firstname,
@@ -163,7 +180,8 @@ FROM
 		class.class || ';' as pa_group, 
 		course.code || '_' || class.identifier || ';' as pa_class, 
 		'' AS groups,
-		VSCE.class || ';' as roll_class	
+		VSCE.class || ';' as roll_class,	
+		allCourse.code || '_' || allclass.identifier || ';' as all_classes
 		
 		FROM
 			edumate.VIEW_STUDENT_START_EXIT_DATES VSSED
@@ -199,6 +217,16 @@ FROM
 		AND	VSCE.class_type_id = 2
 		AND Date(CURRENT DATE)  between VSCE.start_date and VSCE.end_date)
 									
+		-- Get all classes 
+		LEFT JOIN edumate.view_student_class_enrolment VSFCE on (VSSED.student_id = VSFCE.student_id   
+		AND Date(CURRENT DATE)  between (VSFCE.start_date - 10 DAYS) and VSFCE.end_date)
+		
+		LEFT JOIN edumate.course allCourse ON
+		vsfce.course_id = allCourse.course_id 
+		
+		LEFT JOIN edumate.class allClass ON
+		vsfce.class_id = allClass.class_id
+				
 		-- Get performing arts classes
 		LEFT JOIN edumate.view_student_class_enrolment VSPA on (VSSED.student_id = VSPA.student_id
 		AND(VSPA.course like 'PA %' OR VSPA.course like '%Keyboard Club%') 
@@ -222,7 +250,8 @@ FROM
 			'' as pa_group, 
 			'' as pa_class,
 			groups || ';' as groups,
-			class.class || ';' as roll_class	
+			class.class || ';' as roll_class,	
+			'' AS all_classes
 			
 		FROM 
 			STAFF
@@ -261,7 +290,6 @@ ORDER BY
 surname,
 firstname,
 email_address
-
 
 
 "
@@ -329,7 +357,17 @@ email_address
                     users.Last.customFields.Add(objCustomField)
                     objCustomField = Nothing
 
-                End If
+					objCustomField = New SubscriberCustomField
+					objCustomField.Key = "ALL CLASSES"
+					If Not dr.IsDBNull(8) Then
+						objCustomField.Value = dr.GetValue(8)
+					Else
+						objCustomField.Value = "N/A"
+					End If
+					users.Last.customFields.Add(objCustomField)
+					objCustomField = Nothing
+
+				End If
 
 
             End While
