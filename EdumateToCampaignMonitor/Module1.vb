@@ -16,6 +16,7 @@ Module EdumateToCampaignMonitor
     Sub Main()
 		addSubscriber(getEdumateSubscribers())
 		'test()
+
 	End Sub
 
 	Sub test()
@@ -73,7 +74,7 @@ Module EdumateToCampaignMonitor
         For Each objEmailSubscriber In users
 
             Try
-				objSubscriberList.Add(objEmailSubscriber.emailaddress, objEmailSubscriber.name, objEmailSubscriber.customFields, False)
+				objSubscriberList.Add(objEmailSubscriber.emailaddress, objEmailSubscriber.name, objEmailSubscriber.customFields, False, 1)
 			Catch ex As Exception
                 Console.WriteLine(ex)
             End Try
