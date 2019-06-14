@@ -97,7 +97,9 @@ listagg(DISTINCT CAST((pa_class) AS varchar(10000)),'') WITHIN GROUP (ORDER BY p
 listagg(DISTINCT CAST((groups) AS varchar(10000)),'') WITHIN GROUP (ORDER BY groups ASC) as staff_group,
 listagg(DISTINCT CAST((roll_class) AS varchar(10000)),'') WITHIN GROUP (ORDER BY roll_class ASC) as roll_class,
 listagg(DISTINCT CAST((pa_group) AS varchar(10000)),'') WITHIN GROUP (ORDER BY pa_group ASC) as pa_group,
-listagg(DISTINCT CAST((all_classes) AS varchar(10000)),'') WITHIN GROUP (ORDER BY all_classes ASC) as all_classes
+listagg(DISTINCT CAST((all_classes) AS varchar(10000)),'') WITHIN GROUP (ORDER BY all_classes ASC) as all_classes,
+salutation,
+debtor_title
 
 FROM
 	
@@ -107,6 +109,8 @@ FROM
 			contact.firstname,
 			contact.surname,
 			contact.email_address,
+			salutation.salutation,
+			'' as debtor_title,
 			form.short_name || ';' as form,
 			class.class || ';' as pa_group, 
 			course.code || '_' || class.identifier || ';' as pa_class, 
@@ -120,6 +124,8 @@ FROM
 		INNER JOIN student on VSSED.student_id = student.student_id 
 		
 		INNER JOIN contact on student.contact_id = contact.contact_id	
+		
+		INNER JOIN salutation on contact.salutation_id = salutation.salutation_id
 /*
 		INNER JOIN edumate.view_enroled_students_form_run sfr
 		ON VSSED.student_id = sfr.STUDENT_ID 
@@ -177,11 +183,13 @@ FROM
 		parent.firstname,
 		parent.surname,
 		parent.email_address,
+		salutation.salutation,
+		debtor.title as debtor_title,
 		form.short_name || ';' as form,
 		class.class || ';' as pa_group, 
 		course.code || '_' || class.identifier || ';' as pa_class, 
 		'' AS groups,
-		VSCE.class || ';' as roll_class,	
+		VSCE.class || ';' as roll_class,
 		allCourse.code || '_' || allclass.identifier || ';' as all_classes
 		
 		FROM
@@ -195,6 +203,12 @@ FROM
 			VSMC.CARER3_CONTACT_ID = parent.contact_id OR
 			VSMC.CARER4_CONTACT_ID = parent.contact_id )
 	
+	
+		INNER JOIN salutation on parent.salutation_id = salutation.salutation_id
+	
+		LEFT JOIN debtor_contact dc on parent.contact_id = dc.contact_id
+		LEFT JOIN debtor on dc.debtor_id = debtor.debtor_id
+		
 /*
 		INNER JOIN edumate.view_enroled_students_form_run sfr
 		ON VSSED.student_id = sfr.STUDENT_ID 
@@ -247,6 +261,8 @@ FROM
 			contact.firstname,
 			contact.surname,
 			contact.email_address,
+			salutation.salutation,
+			debtor.title as debtor_title,
 			'Staff;' as form,
 			'' as pa_group, 
 			'' as pa_class,
@@ -257,7 +273,12 @@ FROM
 		FROM 
 			STAFF
 
-			INNER JOIN Contact ON staff.contact_id = contact.contact_id 
+			INNER JOIN contact ON staff.contact_id = contact.contact_id 
+			INNER JOIN salutation on contact.salutation_id = salutation.salutation_id
+	
+			LEFT JOIN debtor_contact dc on contact.contact_id = dc.contact_id
+			LEFT JOIN debtor on dc.debtor_id = debtor.debtor_id
+			
 			INNER JOIN staff_employment ON staff.staff_id = staff_employment.staff_id
 			
 			LEFT JOIN teacher on contact.contact_id = teacher.contact_id
@@ -285,12 +306,16 @@ email_address IS NOT NULL
 GROUP BY 
 surname,
 firstname,
-email_address
+email_address,
+salutation,
+debtor_title
 
 ORDER BY
 surname,
 firstname,
-email_address
+email_address,
+salutation,
+debtor_title
 
 
 "
@@ -367,6 +392,27 @@ email_address
 					End If
 					users.Last.customFields.Add(objCustomField)
 					objCustomField = Nothing
+
+					objCustomField = New SubscriberCustomField
+					objCustomField.Key = "SALUTATION"
+					If Not dr.IsDBNull(9) Then
+						objCustomField.Value = dr.GetValue(9)
+					Else
+						objCustomField.Value = ""
+					End If
+					users.Last.customFields.Add(objCustomField)
+					objCustomField = Nothing
+
+					objCustomField = New SubscriberCustomField
+					objCustomField.Key = "DEBTOR_TITLE"
+					If Not dr.IsDBNull(10) Then
+						objCustomField.Value = Replace(dr.GetValue(10), "&amp;", "&")
+					Else
+						objCustomField.Value = ""
+					End If
+					users.Last.customFields.Add(objCustomField)
+					objCustomField = Nothing
+
 
 				End If
 
