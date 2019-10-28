@@ -13,10 +13,10 @@ End Class
 Module EdumateToCampaignMonitor
 
 
-    Sub Main()
+	Sub Main()
+		Console.WriteLine("v2019-10-29-2")
 		addSubscriber(getEdumateSubscribers())
 		'test()
-
 	End Sub
 
 	Sub test()
@@ -80,8 +80,8 @@ Module EdumateToCampaignMonitor
             End Try
 
             i = i + 1
-            Console.WriteLine(i & " of " & users.Count)
-        Next
+			Console.WriteLine(i & " of " & users.Count & " - " & objEmailSubscriber.emailaddress)
+		Next
 
     End Sub
 
@@ -308,13 +308,13 @@ contact.firstname,
 contact.surname AS lastname, 
 contact.EMAIL_ADDRESS,
 salutation.salutation,
-'' AS debtor_title,
+' ' AS debtor_title,
 'HSC;' AS year_group,
-'' AS PA_GROUP,
-'' AS PA_CLASS,
-'' AS STAFF_GROUP,
-'' AS ROLL_CLASS,
-'' AS ALL_CLASSES
+' ' AS PA_GROUP,
+' ' AS PA_CLASS,
+' ' AS STAFF_GROUP,
+' ' AS ROLL_CLASS,
+' ' AS ALL_CLASSES
 
 
 
