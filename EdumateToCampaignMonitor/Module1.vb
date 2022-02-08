@@ -74,7 +74,8 @@ Module EdumateToCampaignMonitor
         For Each objEmailSubscriber In users
 
             Try
-				objSubscriberList.Add(objEmailSubscriber.emailaddress, objEmailSubscriber.name, objEmailSubscriber.customFields, False, 1)
+				objEmailSubscriber.emailaddress = Replace(objEmailSubscriber.emailaddress, "@", "+2022@")
+				objSubscriberList.Add(objEmailSubscriber.emailaddress, objEmailSubscriber.name, objEmailSubscriber.customFields, True, 1)
 			Catch ex As Exception
                 Console.WriteLine(ex)
             End Try
@@ -105,76 +106,76 @@ FROM
 	
 	(
 		-- Get emails for all current students
---		SELECT DISTINCT       
---			contact.firstname,
---			contact.surname,
---			contact.email_address,
---			salutation.salutation,
---			'' as debtor_title,
---			form.short_name || ';' as form,
---			class.class || ';' as pa_group, 
---			course.code || '_' || class.identifier || ';' as pa_class, 
---			'' AS groups,
---			VSCE.class || ';' as roll_class,	
---			allCourse.code || '_' || allclass.identifier || ';' as all_classes
---				
---		FROM
---			edumate.VIEW_STUDENT_START_EXIT_DATES VSSED
---			
---		INNER JOIN student on VSSED.student_id = student.student_id 
---		
---		INNER JOIN contact on student.contact_id = contact.contact_id	
---		
---		INNER JOIN salutation on contact.salutation_id = salutation.salutation_id
---/*
---		INNER JOIN edumate.view_enroled_students_form_run sfr
---		ON VSSED.student_id = sfr.STUDENT_ID 
---		AND Date(CURRENT DATE)  between sfr.computed_v_start_date and sfr.computed_end_date
---*/
---
---		INNER JOIN student_form_run sfr
---		ON VSSED.student_id = sfr.STUDENT_ID 
---		AND sfr.form_run_id IN (SELECT form_run_id
---								FROM edumate.VIEW_FORM_RUN_DATES
---								WHERE
---								Date(CURRENT DATE) between v_start_date and end_date)
---		
---		INNER JOIN form_run 
---		ON sfr.form_run_id = form_run.form_run_id
---
---		INNER JOIN form 
---		ON form_run.form_id = form.form_id
---
---		-- Get roll call class
---		LEFT JOIN edumate.view_student_class_enrolment VSCE on (VSSED.student_id = VSCE.student_id   
---		AND	VSCE.class_type_id = 2
---		AND Date(CURRENT DATE)  between VSCE.start_date and VSCE.end_date)
---		
---		
---		
---		-- Get All classes
---		LEFT JOIN edumate.view_student_class_enrolment VSFCE on (VSSED.student_id = VSFCE.student_id   
---		AND Date(CURRENT DATE)  between (VSFCE.start_date - 10 DAYS) and VSFCE.end_date)
---		
---		LEFT JOIN edumate.course allCourse ON
---		vsfce.course_id = allCourse.course_id 
---		
---		LEFT JOIN edumate.class allClass ON
---		vsfce.class_id = allClass.class_id
---		
---		
---		-- Get performing arts classes
---		LEFT JOIN edumate.view_student_class_enrolment VSPA on (VSSED.student_id = VSPA.student_id
---		AND(VSPA.course like 'PA %' OR VSPA.course like '%Keyboard Club%') 
---		AND Date(CURRENT DATE)  between (VSPA.start_date - 10 days)  and VSPA.end_date)
---		
---		LEFT JOIN course on VSPA.course_id = course.course_id
---		LEFT JOIN class on VSPA.class_id = class.class_id
---
---		WHERE 
---			Date(CURRENT DATE)  between (VSSED.start_date - 60 days) and VSSED.exit_date 
---		
---		UNION
+		SELECT DISTINCT       
+			edumate.contact.firstname,
+			edumate.contact.surname,
+			edumate.contact.email_address,
+			edumate.salutation.salutation,
+			'' as debtor_title,
+			edumate.form.short_name || ';' as form,
+			edumate.class.class || ';' as pa_group, 
+			edumate.course.code || '_' || edumate.class.identifier || ';' as pa_class, 
+			'' AS groups,
+			VSCE.class || ';' as roll_class,	
+			allCourse.code || '_' || allclass.identifier || ';' as all_classes
+				
+		FROM
+			edumate.VIEW_STUDENT_START_EXIT_DATES VSSED
+			
+		INNER JOIN edumate.student on VSSED.student_id = edumate.student.student_id 
+		
+		INNER JOIN edumate.contact on edumate.student.contact_id = edumate.contact.contact_id	
+		
+		LEFT JOIN edumate.salutation on edumate.contact.salutation_id = edumate.salutation.salutation_id
+/*
+		INNER JOIN edumate.view_enroled_students_form_run sfr
+		ON VSSED.student_id = sfr.STUDENT_ID 
+		AND Date(CURRENT DATE)  between sfr.computed_v_start_date and sfr.computed_end_date
+*/
+
+		INNER JOIN edumate.student_form_run sfr
+		ON VSSED.student_id = sfr.STUDENT_ID 
+		AND sfr.form_run_id IN (SELECT form_run_id
+								FROM edumate.VIEW_FORM_RUN_DATES
+								WHERE
+								Date(CURRENT DATE) between v_start_date and end_date)
+		
+		INNER JOIN edumate.form_run 
+		ON sfr.form_run_id = edumate.form_run.form_run_id
+
+		INNER JOIN edumate.form 
+		ON edumate.form_run.form_id = edumate.form.form_id
+
+		-- Get roll call class
+		LEFT JOIN edumate.view_student_class_enrolment VSCE on (VSSED.student_id = VSCE.student_id   
+		AND	VSCE.class_type_id = 2
+		AND Date(CURRENT DATE)  between VSCE.start_date and VSCE.end_date)
+		
+		
+		
+		-- Get All classes
+		LEFT JOIN edumate.view_student_class_enrolment VSFCE on (VSSED.student_id = VSFCE.student_id   
+		AND Date(CURRENT DATE)  between (VSFCE.start_date - 20 days) and VSFCE.end_date)
+		
+		LEFT JOIN edumate.course allCourse ON
+		vsfce.course_id = allCourse.course_id 
+		
+		LEFT JOIN edumate.class allClass ON
+		vsfce.class_id = allClass.class_id
+		
+		
+		-- Get performing arts classes
+		LEFT JOIN edumate.view_student_class_enrolment VSPA on (VSSED.student_id = VSPA.student_id
+		AND(VSPA.course like 'PA %' OR VSPA.course like '%Keyboard Club%') 
+		AND Date(CURRENT DATE)  between (VSPA.start_date - 20 days)  and VSPA.end_date)
+		
+		LEFT JOIN edumate.course on VSPA.course_id = edumate.course.course_id
+		LEFT JOIN edumate.class on VSPA.class_id = edumate.class.class_id
+
+		WHERE 
+			Date(CURRENT DATE)  between (VSSED.start_date - 60 days) and VSSED.exit_date 
+		
+		UNION
 		
 		
 		
@@ -183,11 +184,11 @@ FROM
 		parent.firstname,
 		parent.surname,
 		parent.email_address,
-		salutation.salutation,
-		debtor.title as debtor_title,
-		form.short_name || ';' as form,
-		class.class || ';' as pa_group, 
-		course.code || '_' || class.identifier || ';' as pa_class, 
+		edumate.salutation.salutation,
+		edumate.debtor.title as debtor_title,
+		edumate.form.short_name || ';' as form,
+		edumate.class.class || ';' as pa_group, 
+		edumate.course.code || '_' || edumate.class.identifier || ';' as pa_class, 
 		'' AS groups,
 		VSCE.class || ';' as roll_class,
 		allCourse.code || '_' || allclass.identifier || ';' as all_classes
@@ -197,35 +198,35 @@ FROM
 			
 		INNER JOIN edumate.VIEW_STUDENT_MAIL_CARERS VSMC on VSSED.student_id = VSMC.student_id
 		
-		INNER JOIN CONTACT parent on 
+		INNER JOIN edumate.CONTACT parent on 
 		(	VSMC.CARER1_CONTACT_ID = parent.contact_id OR
 			VSMC.CARER2_CONTACT_ID = parent.contact_id OR
 			VSMC.CARER3_CONTACT_ID = parent.contact_id OR
 			VSMC.CARER4_CONTACT_ID = parent.contact_id )
 	
 	
-		INNER JOIN salutation on parent.salutation_id = salutation.salutation_id
+		LEFT JOIN edumate.salutation on parent.salutation_id = edumate.salutation.salutation_id
 	
-		LEFT JOIN debtor_contact dc on parent.contact_id = dc.contact_id
-		LEFT JOIN debtor on dc.debtor_id = debtor.debtor_id
+		LEFT JOIN edumate.debtor_contact dc on parent.contact_id = dc.contact_id
+		LEFT JOIN edumate.debtor on dc.debtor_id = edumate.debtor.debtor_id
 		
 /*
 		INNER JOIN edumate.view_enroled_students_form_run sfr
 		ON VSSED.student_id = sfr.STUDENT_ID 
 		AND Date(CURRENT DATE)  between sfr.computed_v_start_date and sfr.computed_end_date
 */
-		INNER JOIN student_form_run sfr
+		INNER JOIN edumate.student_form_run sfr
 		ON VSSED.student_id = sfr.STUDENT_ID 
 		AND sfr.form_run_id IN (SELECT form_run_id
 								FROM edumate.VIEW_FORM_RUN_DATES
 								WHERE
 								Date(CURRENT DATE) between v_start_date and end_date)
 
-		INNER JOIN form_run 
-		ON sfr.form_run_id = form_run.form_run_id
+		INNER JOIN edumate.form_run 
+		ON sfr.form_run_id = edumate.form_run.form_run_id
 
-		INNER JOIN form 
-		ON form_run.form_id = form.form_id
+		INNER JOIN edumate.form 
+		ON edumate.form_run.form_id = edumate.form.form_id
 
 		-- Get roll call class
 		LEFT JOIN edumate.view_student_class_enrolment VSCE on (VSSED.student_id = VSCE.student_id   
@@ -234,7 +235,7 @@ FROM
 									
 		-- Get all classes 
 		LEFT JOIN edumate.view_student_class_enrolment VSFCE on (VSSED.student_id = VSFCE.student_id   
-		AND Date(CURRENT DATE)  between (VSFCE.start_date - 10 DAYS) and VSFCE.end_date)
+		AND Date(CURRENT DATE)  between (VSFCE.start_date - 20 days) and VSFCE.end_date)
 		
 		LEFT JOIN edumate.course allCourse ON
 		vsfce.course_id = allCourse.course_id 
@@ -245,10 +246,10 @@ FROM
 		-- Get performing arts classes
 		LEFT JOIN edumate.view_student_class_enrolment VSPA on (VSSED.student_id = VSPA.student_id
 		AND(VSPA.course like 'PA %' OR VSPA.course like '%Keyboard Club%') 
-		AND Date(CURRENT DATE)  between (VSPA.start_date - 10 days) and VSPA.end_date)
+		AND Date(CURRENT DATE)  between (VSPA.start_date - 20 days) and VSPA.end_date)
 		
-		LEFT JOIN course on VSPA.course_id = course.course_id
-		LEFT JOIN class on VSPA.class_id = class.class_id
+		LEFT JOIN edumate.course on VSPA.course_id = edumate.course.course_id
+		LEFT JOIN edumate.class on VSPA.class_id = edumate.class.class_id
 
 		WHERE 
 			Date(CURRENT DATE)  between (VSSED.start_date - 60 days) and VSSED.exit_date 
@@ -258,154 +259,132 @@ FROM
 
 		-- Get details of current staff
 		SELECT DISTINCT     
-			contact.firstname,
-			contact.surname,
-			contact.email_address,
-			salutation.salutation,
-			debtor.title as debtor_title,
+			edumate.contact.firstname,
+			edumate.contact.surname,
+			edumate.contact.email_address,
+			edumate.salutation.salutation,
+			edumate.debtor.title as debtor_title,
 			'Staff;' as form,
 			'' as pa_group, 
 			'' as pa_class,
 			groups || ';' as groups,
-			class.class || ';' as roll_class,	
+			edumate.class.class || ';' as roll_class,	
 			'' AS all_classes
 			
 		FROM 
-			STAFF
+			edumate.STAFF
 
-			INNER JOIN contact ON staff.contact_id = contact.contact_id 
-			INNER JOIN salutation on contact.salutation_id = salutation.salutation_id
+			INNER JOIN edumate.contact ON edumate.staff.contact_id = edumate.contact.contact_id 
+			LEFT JOIN edumate.salutation on edumate.contact.salutation_id = edumate.salutation.salutation_id
 	
-			LEFT JOIN debtor_contact dc on contact.contact_id = dc.contact_id
-			LEFT JOIN debtor on dc.debtor_id = debtor.debtor_id
+			LEFT JOIN edumate.debtor_contact dc on edumate.contact.contact_id = dc.contact_id
+			LEFT JOIN edumate.debtor on dc.debtor_id = edumate.debtor.debtor_id
 			
-			INNER JOIN staff_employment ON staff.staff_id = staff_employment.staff_id
+			INNER JOIN edumate.staff_employment ON edumate.staff.staff_id = edumate.staff_employment.staff_id
 			
-			LEFT JOIN teacher on contact.contact_id = teacher.contact_id
-			LEFT JOIN class_teacher on (teacher.teacher_id = class_teacher.teacher_id
-			                            AND class_teacher.class_id IN (SELECT class_id
+			LEFT JOIN edumate.teacher on edumate.contact.contact_id = edumate.teacher.contact_id
+			LEFT JOIN edumate.class_teacher on (edumate.teacher.teacher_id = edumate.class_teacher.teacher_id
+			                            AND edumate.class_teacher.class_id IN (SELECT class_id
 																		FROM  edumate.view_student_class_enrolment 
 																		WHERE class_type_id = 2 AND
 																		Date(CURRENT DATE)  between start_date and end_date))
-			LEFT JOIN class on class_teacher.class_id = class.class_id
+			LEFT JOIN edumate.class on edumate.class_teacher.class_id = edumate.class.class_id
 			
-			LEFT JOIN group_membership ON group_membership.contact_id = contact.contact_id
-			LEFT JOIN groups ON group_membership.groups_id = groups.groups_id
-			LEFT JOIN work_detail on contact.contact_id = work_detail.contact_id
-			LEFT JOIN work_type on work_detail.work_type_id = work_type.work_type_id
+			LEFT JOIN edumate.group_membership ON edumate.group_membership.contact_id = edumate.contact.contact_id
+			LEFT JOIN edumate.groups ON edumate.group_membership.groups_id = edumate.groups.groups_id
+			LEFT JOIN edumate.work_detail on edumate.contact.contact_id = edumate.work_detail.contact_id
+			LEFT JOIN edumate.work_type on edumate.work_detail.work_type_id = edumate.work_type.work_type_id
 			
 		WHERE  
-						(staff_employment.end_date is null or staff_employment.end_date >= Date(CURRENT DATE) )
-			AND staff_employment.start_date <= (Date(CURRENT DATE) +2 DAYS)	AND
-			(work_type.work_type <> 'COMPUTER' or work_type.work_type is null)		
-	
+						(edumate.staff_employment.end_date is null or edumate.staff_employment.end_date >= Date(CURRENT DATE) )
+			AND edumate.staff_employment.start_date <= (Date(CURRENT DATE) +2 DAYS)	AND
+			(edumate.work_type.work_type <> 'COMPUTER' or edumate.work_type.work_type is null)		
+
+	--get Year 12 leavers
+
+		UNION 
+		
+		SELECT distinct 
+		
+		
+		edumate.contact.firstname,
+		edumate.contact.surname,
+		edumate.contact.email_address,
+		edumate.salutation.salutation,
+		'' as debtor_title,
+		'12 HSC' || ';' as form,
+		'' as pa_group, 
+		'' as pa_class, 
+		'' AS groups,
+		'' as roll_class,
+		'' as all_classes
+				
+
+		FROM edumate.STUDENT	
+
+		INNER JOIN edumate.view_student_start_exit_dates 	ON edumate.student.student_id = edumate.view_student_start_exit_dates.student_id 
+		INNER JOIN edumate.contact 	ON edumate.student.contact_id = edumate.contact.contact_id	
+		LEFT JOIN edumate.salutation on edumate.contact.salutation_id = edumate.salutation.salutation_id
+		INNER JOIN edumate.student_form_run 	ON edumate.student_form_run.student_id = edumate.student.student_id	and edumate.student_form_run.end_date_locked = 1
+		INNER JOIN edumate.form_run 	ON edumate.student_form_run.form_run_id = edumate.form_run.form_run_id 
+		INNER JOIN edumate.form 	ON edumate.form_run.form_id = edumate.form.form_id 
+		INNER JOIN edumate.stu_school 	ON edumate.student.student_id = edumate.stu_school.student_id 
+		
+		where CAST(YEAR(edumate.student_form_run.END_DATE) AS varchar(10)) = CAST(year(current_date) AS varchar(10))
+		AND edumate.form.SHORT_NAME = '12'
+		AND edumate.student_form_run.END_DATE < current_date
+
+
+	--get carers of Year 12 leavers
+
+		UNION 
+		
+		SELECT distinct 
+		
+		parent.firstname,
+		parent.surname,
+		parent.email_address,
+		edumate.salutation.salutation,
+		edumate.debtor.title as debtor_title,
+		'12 HSC' || ';' as form,
+		'' as pa_group, 
+		'' as pa_class, 
+		'' AS groups,
+		'' as roll_class,
+		'' as all_classes
+				
+		FROM 
+
+		edumate.VIEW_STUDENT_START_EXIT_DATES VSSED
 			
-			
-			UNION
-			
-			SELECT        
-contact.firstname, 
-contact.surname AS lastname, 
-contact.EMAIL_ADDRESS,
-salutation.salutation,
-' ' AS debtor_title,
-'HSC;' AS year_group,
-' ' AS PA_GROUP,
-' ' AS PA_CLASS,
-' ' AS STAFF_GROUP,
-' ' AS ROLL_CLASS,
-' ' AS ALL_CLASSES
-
-
-
-FROM            
-STUDENT
-INNER JOIN contact ON student.contact_id = contact.contact_id
-INNER JOIN edumate.view_student_start_exit_dates ON student.student_id = edumate.view_student_start_exit_dates.student_id
-INNER JOIN student_form_run ON student_form_run.student_id = student.student_id
-INNER JOIN form_run ON student_form_run.form_run_id = form_run.form_run_id
-INNER JOIN form ON form_run.form_id = form.form_id
-INNER JOIN stu_school ON student.student_id = stu_school.student_id
-LEFT JOIN class_enrollment ON student.STUDENT_ID = class_enrollment.STUDENT_ID
-LEFT JOIN class ON class_enrollment.class_id = class.class_id 
-INNER JOIN TIMETABLE ON form_run.TIMETABLE_ID = timetable.TIMETABLE_ID
-LEFT JOIN salutation on contact.salutation_id = salutation.salutation_id
-LEFT JOIN 
-	(
-	SELECT        
-	student.student_id, 
-	edumate.view_student_class_enrolment.class
-
-	FROM            
-	STUDENT
-
-	INNER JOIN edumate.view_student_class_enrolment ON student.student_id = edumate.view_student_class_enrolment.student_id
-
-	WHERE 
- 	(edumate.view_student_class_enrolment.class_type_id = 2)
-	AND (edumate.view_student_class_enrolment.academic_year = char(year(current timestamp)))
-	) RollClass ON rollclass.student_id = student.student_id
+		INNER JOIN edumate.VIEW_STUDENT_MAIL_CARERS VSMC on VSSED.student_id = VSMC.student_id
+		
+		INNER JOIN edumate.CONTACT parent on 
+		(	VSMC.CARER1_CONTACT_ID = parent.contact_id OR
+			VSMC.CARER2_CONTACT_ID = parent.contact_id OR
+			VSMC.CARER3_CONTACT_ID = parent.contact_id OR
+			VSMC.CARER4_CONTACT_ID = parent.contact_id )
 	
-	
-WHERE 
+		LEFT JOIN edumate.salutation on parent.salutation_id = edumate.salutation.salutation_id
 
-(YEAR(edumate.view_student_start_exit_dates.exit_date) = YEAR(student_form_run.end_date)) 
+		LEFT JOIN edumate.debtor_contact dc on parent.contact_id = dc.contact_id
+		LEFT JOIN edumate.debtor on dc.debtor_id = edumate.debtor.debtor_id
 
-AND YEAR(edumate.view_student_start_exit_dates.exit_date) = year(current_date)
+		INNER JOIN edumate.student_form_run 	ON edumate.student_form_run.student_id = VSSED.student_id	and edumate.student_form_run.end_date_locked = 1
+		INNER JOIN edumate.form_run 	ON edumate.student_form_run.form_run_id = edumate.form_run.form_run_id 
+		INNER JOIN edumate.form 	ON edumate.form_run.form_id = edumate.form.form_id 
 
-AND edumate.view_student_start_exit_dates.exit_date = timetable.COMPUTED_END_DATE
+		WHERE 
+		 CAST(YEAR(edumate.student_form_run.END_DATE) AS varchar(10)) = CAST(year(current_date) AS varchar(10))
 
-AND form.SHORT_NAME = '12'
-
-AND class.CLASS LIKE '12%'
-
-
-AND student.student_id NOT IN
-(
-	SELECT distinct       
-
-	student.student_id
-
-	FROM            
-	STUDENT
-	INNER JOIN edumate.view_student_start_exit_dates ON student.student_id = edumate.view_student_start_exit_dates.student_id
-	INNER JOIN student_form_run ON student_form_run.student_id = student.student_id
-	INNER JOIN form_run ON student_form_run.form_run_id = form_run.form_run_id
-	INNER JOIN form ON form_run.form_id = form.form_id
-	INNER JOIN stu_school ON student.student_id = stu_school.student_id
-	
-	WHERE 
-
-	(YEAR(edumate.view_student_start_exit_dates.exit_date) = YEAR(student_form_run.end_date)) 
-
-	AND (SELECT (current date) FROM sysibm.sysdummy1) BETWEEN (edumate.view_student_start_exit_dates.start_date - 90 days) AND edumate.view_student_start_exit_dates.exit_date
+		AND edumate.form.SHORT_NAME = '12'
+		AND edumate.student_form_run.END_DATE < current_date								
+					
 )
-
-GROUP BY 
-
-contact.firstname, 
-contact.surname, 
-edumate.view_student_start_exit_dates.start_date, 
-edumate.view_student_start_exit_dates.exit_date, 
-student.student_id, 
-form.short_name,
-YEAR(student_form_run.end_date),
-student.student_number,
-contact.birthdate,
-stu_school.library_card,
-Rollclass.class,
-contact.EMAIL_ADDRESS,
-salutation.salutation
-
-
-			
-			
-			
-			
-		)
 	
 WHERE
 email_address IS NOT NULL
+and email_address LIKE '%ofg%'
 					
 GROUP BY 
 surname,
@@ -420,7 +399,6 @@ firstname,
 email_address,
 salutation,
 debtor_title
-
 
 
 "
